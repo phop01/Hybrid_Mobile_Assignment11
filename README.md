@@ -1,4 +1,6 @@
-# CampusPass แอปเช็กอินกิจกรรมมหาวิทยาลัย
+# เช็กอินกิจกรรม
+
+แอปเช็กอินกิจกรรมมหาวิทยาลัย
 
 Assignment 11 รายวิชา Hybrid Mobile Application Programming
 รวมเนื้อหาสัปดาห์ 1–11 ไว้ในแอปเดียว สร้างด้วย React Native + Expo SDK 57 + TypeScript + Expo Router

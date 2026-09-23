@@ -1,4 +1,4 @@
-// CampusPass API server
+// เช็กอินกิจกรรม API server
 // ใช้ Node.js ล้วน (node:http) ไม่ต้องติดตั้ง package เพิ่ม เพื่อให้ clone แล้วรันได้ทันที
 //
 // เหตุผลที่ต้องมี server กลาง:
@@ -413,7 +413,7 @@ export function startServer(port = PORT) {
     });
   });
   server.listen(port, '0.0.0.0', () => {
-    console.log(`[api] CampusPass API พร้อมที่ http://localhost:${port} (demo mode: ${DEMO_MODE ? 'on' : 'off'})`);
+    console.log(`[api] เช็กอินกิจกรรม API พร้อมที่ http://localhost:${port} (demo mode: ${DEMO_MODE ? 'on' : 'off'})`);
   });
   return server;
 }

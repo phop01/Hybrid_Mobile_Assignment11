@@ -46,7 +46,7 @@ export default function LoginScreen() {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Screen>
         <Card>
-          <SectionTitle>เข้าสู่ระบบ CampusPass</SectionTitle>
+          <SectionTitle>เข้าสู่ระบบ เช็กอินกิจกรรม</SectionTitle>
           <Text style={styles.muted}>ใช้รหัสนักศึกษาเพื่อลงทะเบียน เช็กอิน และนับจำนวนกิจกรรมที่เข้าร่วม</Text>
           <TextField
             label="รหัสนักศึกษา"

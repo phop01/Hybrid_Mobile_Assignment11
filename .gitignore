@@ -42,5 +42,5 @@ example
 /ios
 /android
 
-# CampusPass API data (สร้างใหม่อัตโนมัติ)
+# เช็กอินกิจกรรม API data (สร้างใหม่อัตโนมัติ)
 server/.data/

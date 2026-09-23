@@ -1,4 +1,4 @@
-// API ทั้งหมดของ CampusPass (ตรงกับ server/index.mjs)
+// API ทั้งหมดของ เช็กอินกิจกรรม (ตรงกับ server/index.mjs)
 
 import type { Activity, Registration, RegistrationForm, User } from '@/types/models';
 
