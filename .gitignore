@@ -44,3 +44,8 @@ example
 
 # เช็กอินกิจกรรม API data (สร้างใหม่อัตโนมัติ)
 server/.data/
+
+# ไฟล์ตั้งค่าเครื่องมือในเครื่อง
+CLAUDE.md
+AGENTS.md
+.claude/
