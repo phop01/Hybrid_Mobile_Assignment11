@@ -7,7 +7,6 @@ Assignment 11 รายวิชา Hybrid Mobile Application Programming
 |---|---|
 | ผู้พัฒนา | นายปภพ สุระทิพย์ |
 | รหัสนักศึกษา | 663450176-7 |
-| GitHub | _ลิงก์ repository_ |
 
 ## แอปนี้ทำอะไร
 
