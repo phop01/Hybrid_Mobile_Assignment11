@@ -41,3 +41,6 @@ example
 # generated native folders
 /ios
 /android
+
+# CampusPass API data (สร้างใหม่อัตโนมัติ)
+server/.data/
