@@ -1,18 +1,20 @@
 {
   "expo": {
-    "name": "campuspass",
+    "name": "CampusPass",
     "slug": "campuspass",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "campuspass",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "com.example.campuspass"
     },
     "android": {
+      "package": "com.example.campuspass",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#ECEBFB",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -20,7 +22,7 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "output": "static",
+      "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
@@ -28,14 +30,30 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#3F3CBB",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
-      ]
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "CampusPass ใช้กล้องถ่ายรูปยืนยันการเข้าร่วมกิจกรรมตอนเช็กอิน",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "CampusPass ใช้ตำแหน่งเฉพาะตอนเช็กอิน เพื่อยืนยันว่าคุณอยู่ในพื้นที่จัดกิจกรรม"
+        }
+      ],
+      "expo-notifications",
+      "expo-secure-store",
+      "expo-sqlite"
     ],
     "experiments": {
-      "typedRoutes": true,
+      "typedRoutes": false,
       "reactCompiler": true
     }
   }

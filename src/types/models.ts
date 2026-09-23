@@ -1,0 +1,74 @@
+// โครงสร้างข้อมูลหลักของ CampusPass
+// กำหนดด้วย TypeScript ตั้งแต่แรก เพื่อให้ข้อมูลผิดรูปแบบถูกจับได้ตั้งแต่ตอนเขียนโค้ด
+
+export type Category = 'academic' | 'volunteer' | 'sport' | 'culture';
+
+/** วิธีที่ผู้จัดใช้เช็กชื่อ: เช็กอินในแอป หรือใบเซ็นชื่อกระดาษ */
+export type CheckInMethod = 'app' | 'paper';
+
+export type Venue = {
+  name: string;
+  latitude: number;
+  longitude: number;
+  /** รัศมีที่ถือว่า "อยู่ในงาน" (เมตร) */
+  radiusM: number;
+};
+
+export type Activity = {
+  id: string;
+  title: string;
+  description: string;
+  category: Category;
+  startsAt: string; // ISO 8601
+  endsAt: string; // ISO 8601
+  location: Venue;
+  checkInMethod: CheckInMethod;
+  capacity: number;
+  registeredCount: number;
+};
+
+export type RegistrationStatus = 'registered' | 'pending_review' | 'checked_in' | 'cancelled';
+
+export type CheckInRecord = {
+  photoUrl: string;
+  latitude: number;
+  longitude: number;
+  distanceM: number;
+  takenAt: string;
+  submittedAt: string;
+  verifiedAt: string | null;
+};
+
+export type RegistrationForm = {
+  fullName: string;
+  studentId: string;
+  faculty: string;
+  phone: string;
+  dietary: string;
+};
+
+export type Registration = {
+  id: string;
+  activityId: string;
+  status: RegistrationStatus;
+  registeredAt: string;
+  form: RegistrationForm;
+  checkIn: CheckInRecord | null;
+};
+
+export type User = {
+  id: string;
+  studentId: string;
+  fullName: string;
+  faculty: string;
+};
+
+/** ข้อมูลเช็กอินที่ถ่ายแล้วแต่ยังส่งไม่ได้ (ออฟไลน์) */
+export type PendingCheckIn = {
+  registrationId: string;
+  photoBase64: string;
+  latitude: number;
+  longitude: number;
+  takenAt: string;
+  createdAt: string;
+};

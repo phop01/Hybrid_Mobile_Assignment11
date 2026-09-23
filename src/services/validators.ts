@@ -1,0 +1,79 @@
+// ตรวจข้อมูลที่ได้จาก API ตอนรันจริง
+// TypeScript ตรวจได้แค่ตอน compile แต่ JSON จากเครือข่ายอาจผิดรูปแบบได้เสมอ
+
+import type { Activity, CheckInRecord, Registration, User } from '@/types/models';
+
+type Obj = Record<string, unknown>;
+const isObj = (v: unknown): v is Obj => typeof v === 'object' && v !== null;
+const isStr = (v: unknown): v is string => typeof v === 'string';
+const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+
+const CATEGORIES = ['academic', 'volunteer', 'sport', 'culture'];
+const STATUSES = ['registered', 'pending_review', 'checked_in', 'cancelled'];
+
+export function isActivity(v: unknown): v is Activity {
+  if (!isObj(v) || !isObj(v.location)) return false;
+  const loc = v.location;
+  return (
+    isStr(v.id) &&
+    isStr(v.title) &&
+    isStr(v.description) &&
+    CATEGORIES.includes(v.category as string) &&
+    isStr(v.startsAt) &&
+    !Number.isNaN(Date.parse(v.startsAt)) &&
+    isStr(v.endsAt) &&
+    !Number.isNaN(Date.parse(v.endsAt)) &&
+    (v.checkInMethod === 'app' || v.checkInMethod === 'paper') &&
+    isNum(v.capacity) &&
+    isNum(v.registeredCount) &&
+    isStr(loc.name) &&
+    isNum(loc.latitude) &&
+    Math.abs(loc.latitude) <= 90 &&
+    isNum(loc.longitude) &&
+    Math.abs(loc.longitude) <= 180 &&
+    isNum(loc.radiusM)
+  );
+}
+
+function isCheckIn(v: unknown): v is CheckInRecord {
+  return (
+    isObj(v) &&
+    isStr(v.photoUrl) &&
+    isNum(v.latitude) &&
+    isNum(v.longitude) &&
+    isNum(v.distanceM) &&
+    isStr(v.takenAt) &&
+    isStr(v.submittedAt) &&
+    (v.verifiedAt === null || isStr(v.verifiedAt))
+  );
+}
+
+export function isRegistration(v: unknown): v is Registration {
+  return (
+    isObj(v) &&
+    isStr(v.id) &&
+    isStr(v.activityId) &&
+    STATUSES.includes(v.status as string) &&
+    isStr(v.registeredAt) &&
+    isObj(v.form) &&
+    isStr(v.form.fullName) &&
+    isStr(v.form.studentId) &&
+    (v.checkIn === null || isCheckIn(v.checkIn))
+  );
+}
+
+export function isUser(v: unknown): v is User {
+  return isObj(v) && isStr(v.id) && isStr(v.studentId) && isStr(v.fullName) && isStr(v.faculty);
+}
+
+export function parseList<T>(payload: unknown, guard: (v: unknown) => v is T, label: string): T[] {
+  if (!Array.isArray(payload) || !payload.every(guard)) {
+    throw new Error(`รูปแบบข้อมูล${label}จาก server ไม่ถูกต้อง`);
+  }
+  return payload;
+}
+
+export function parseOne<T>(payload: unknown, guard: (v: unknown) => v is T, label: string): T {
+  if (!guard(payload)) throw new Error(`รูปแบบข้อมูล${label}จาก server ไม่ถูกต้อง`);
+  return payload;
+}
