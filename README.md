@@ -29,7 +29,7 @@ Assignment 11 รายวิชา Hybrid Mobile Application Programming
 | 7 | Storage + Offline | AsyncStorage, SQLite, ใช้งานตอนไม่มีเน็ต |
 | 8 | Authentication | Login, token ใน SecureStore, หน้าที่ต้อง Login |
 | 9 | Camera + Image Picker | ถ่ายหลักฐานการเข้าร่วม หรือเลือกจากคลังรูป |
-| 10 | Location + Maps | ตรวจว่าอยู่ในพื้นที่งาน, แผนที่ |
+| 10 | Location + Maps | ตรวจว่าอยู่ในพื้นที่งาน, แท็บแผนที่รวมกิจกรรม |
 | 11 | Notifications | แจ้งเตือนเมื่อเปิดเช็กอิน |
 
 ## ติดตั้งและรัน

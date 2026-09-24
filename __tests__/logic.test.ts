@@ -1,5 +1,6 @@
 import { summarizeAttendance } from '@/lib/attendance';
 import { filterActivities, sortForBrowsing } from '@/lib/filter-activities';
+import { regionFor } from '@/lib/geo';
 import { hasErrors, validateRegistration } from '@/lib/validate-registration';
 import { favoritesReducer, initialFavorites } from '@/state/favorites-reducer';
 import { initialFormState, registrationFormReducer } from '@/state/registration-form-reducer';
@@ -111,5 +112,27 @@ describe('registrationFormReducer', () => {
     });
     state = registrationFormReducer(state, { type: 'change', field: 'phone', value: '0' });
     expect(state.serverErrors.phone).toBeUndefined();
+  });
+});
+
+describe('regionFor (แผนที่รวมกิจกรรม)', () => {
+  it('returns null when there is nothing to show', () => {
+    expect(regionFor([])).toBeNull();
+  });
+
+  it('centers on all points with 30% padding', () => {
+    const r = regionFor([
+      { latitude: 17.8, longitude: 102.7 },
+      { latitude: 17.9, longitude: 102.8 },
+    ])!;
+    expect(r.latitude).toBeCloseTo(17.85);
+    expect(r.longitude).toBeCloseTo(102.75);
+    expect(r.latitudeDelta).toBeCloseTo(0.13);
+  });
+
+  it('keeps a minimum zoom for a single point', () => {
+    const r = regionFor([{ latitude: 17.8066, longitude: 102.7463 }])!;
+    expect(r.latitudeDelta).toBe(0.01);
+    expect(r.longitudeDelta).toBe(0.01);
   });
 });

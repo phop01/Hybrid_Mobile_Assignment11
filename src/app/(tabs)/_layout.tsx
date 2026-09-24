@@ -5,7 +5,7 @@ import { Colors } from '@/constants/theme';
 import { useMyRegistrations } from '@/state/my-registrations-context';
 
 /**
- * 4 แท็บ = 4 เรื่องที่ผู้ใช้เปิดบ่อยที่สุด เข้าถึงได้ในแตะเดียว
+ * 5 แท็บ = 5 เรื่องที่ผู้ใช้เปิดบ่อยที่สุด เข้าถึงได้ในแตะเดียว (แผนที่เพิ่มในสัปดาห์ 12)
  * หน้ารายละเอียด/ลงทะเบียน/เช็กอินอยู่ใน Root Stack นอกแท็บ จึงมีปุ่มย้อนกลับอัตโนมัติ
  */
 export default function TabsLayout() {
@@ -25,6 +25,13 @@ export default function TabsLayout() {
         options={{
           title: 'กิจกรรม',
           tabBarIcon: ({ color, size }) => <Ionicons name="calendar" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="map"
+        options={{
+          title: 'แผนที่',
+          tabBarIcon: ({ color, size }) => <Ionicons name="map" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
