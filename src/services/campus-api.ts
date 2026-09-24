@@ -1,6 +1,6 @@
 // API ทั้งหมดของ เช็กอินกิจกรรม (ตรงกับ server/index.mjs)
 
-import type { Activity, Registration, RegistrationForm, User } from '@/types/models';
+import type { Activity, PhotoSource, Registration, RegistrationForm, User } from '@/types/models';
 
 import { apiRequest } from './api-client';
 import { isActivity, isRegistration, isUser, parseList, parseOne } from './validators';
@@ -59,6 +59,7 @@ export async function cancelRegistration(token: string, id: string): Promise<Reg
 
 export type CheckInPayload = {
   photoBase64: string;
+  photoSource: PhotoSource;
   latitude: number;
   longitude: number;
   takenAt: string;

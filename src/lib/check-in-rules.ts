@@ -58,3 +58,15 @@ export function canCheckIn(params: {
   }
   return { ok: true };
 }
+
+/**
+ * รูปจากคลังต้องถ่ายระหว่างช่วงเช็กอินของงานนี้ (ตรวจก่อนส่ง ไม่ต้องรอ server ปฏิเสธ)
+ * คืนข้อความบอกเหตุผลถ้าใช้ไม่ได้ / null ถ้าใช้ได้
+ */
+export function photoTimeProblem(activity: Activity, takenAt: string | null): string | null {
+  if (!takenAt) return 'รูปนี้ไม่มีข้อมูลเวลาถ่าย (เช่น รูปแคปจอหรือรูปที่ส่งผ่านแชต) กรุณาถ่ายด้วยกล้องแทน';
+  const taken = new Date(takenAt).getTime();
+  if (taken < checkInOpensAt(activity).getTime()) return 'รูปนี้ถ่ายก่อนเริ่มงาน ต้องใช้รูปที่ถ่ายระหว่างงาน';
+  if (taken > new Date(activity.endsAt).getTime()) return 'รูปนี้ถ่ายหลังงานจบแล้ว';
+  return null;
+}

@@ -325,6 +325,10 @@ async function handle(req, res) {
       throw new HttpError(409, 'not_registered', 'การลงทะเบียนนี้ถูกยกเลิกแล้ว');
     }
     const { photoBase64, latitude, longitude, takenAt } = body;
+    // คิวออฟไลน์รุ่นเก่าไม่มีช่องนี้ = ถ่ายสด
+    const photoSource = ['library', 'demo'].includes(body.photoSource) ? body.photoSource : 'camera';
+    // รูปทดสอบข้ามการตรวจเวลาถ่ายในแอป จึงรับเฉพาะตอนสาธิต ใช้งานจริงต้องปิด
+    if (photoSource === 'demo' && !DEMO_MODE) throw new HttpError(400, 'demo_disabled', 'ไม่รับรูปทดสอบ');
     if (typeof photoBase64 !== 'string' || photoBase64.length < 100) {
       throw new HttpError(400, 'photo_required', 'ต้องมีรูปถ่ายเป็นหลักฐาน');
     }
@@ -343,7 +347,11 @@ async function handle(req, res) {
     if (!Number.isFinite(taken) || taken > Date.now() + 2 * 60 * 1000) {
       throw new HttpError(400, 'invalid_time', 'เวลาถ่ายรูปไม่ถูกต้อง');
     }
-    if (taken < opensAt) throw new HttpError(409, 'too_early', 'ยังไม่ถึงเวลาเช็กอิน');
+    if (taken < opensAt) {
+      // รูปจากคลังที่ถ่ายก่อนงาน = รูปเก่า บอกให้ชัดว่าไม่ใช่เพราะมาเร็วไป
+      if (photoSource === 'library') throw new HttpError(409, 'photo_too_old', 'รูปนี้ถ่ายก่อนเริ่มงาน ต้องใช้รูปที่ถ่ายระหว่างงาน');
+      throw new HttpError(409, 'too_early', 'ยังไม่ถึงเวลาเช็กอิน');
+    }
     if (taken > endsAt) throw new HttpError(409, 'too_late', 'หมดเวลาเช็กอินแล้ว');
 
     const distance = distanceMeters({ latitude, longitude }, activity.location);
@@ -355,6 +363,7 @@ async function handle(req, res) {
     writeFileSync(join(UPLOAD_DIR, fileName), photo);
     registration.checkIn = {
       photoUrl: `/uploads/${fileName}`,
+      photoSource,
       latitude,
       longitude,
       distanceM: Math.round(distance),

@@ -29,8 +29,16 @@ export type Activity = {
 
 export type RegistrationStatus = 'registered' | 'pending_review' | 'checked_in' | 'cancelled';
 
+/**
+ * ที่มาของรูปเช็กอิน: ให้ผู้จัดรู้ว่ารูปไหนถ่ายสด รูปไหนเลือกจากคลัง
+ * 'demo' = รูปทดสอบในโหมดสาธิต (ข้ามการตรวจเวลาถ่าย) server รับเฉพาะตอนเปิด demo mode
+ */
+export type PhotoSource = 'camera' | 'library' | 'demo';
+
 export type CheckInRecord = {
   photoUrl: string;
+  /** ข้อมูลเก่าก่อนมีฟีเจอร์เลือกจากคลังไม่มีช่องนี้ = ถ่ายสด */
+  photoSource?: PhotoSource;
   latitude: number;
   longitude: number;
   distanceM: number;
@@ -67,6 +75,7 @@ export type User = {
 export type PendingCheckIn = {
   registrationId: string;
   photoBase64: string;
+  photoSource: PhotoSource;
   latitude: number;
   longitude: number;
   takenAt: string;

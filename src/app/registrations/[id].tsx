@@ -12,6 +12,7 @@ import { useNow } from '@/hooks/use-now';
 import { checkInOpensAt, isCheckInOpen } from '@/lib/check-in-rules';
 import { formatDate, formatDateRange, formatDistance, formatTime } from '@/lib/format';
 import { confirmAction, openDirections } from '@/lib/platform-actions';
+import { PHOTO_SOURCE_LABEL } from '@/lib/photo-time';
 import { toAbsoluteUrl } from '@/services/api-config';
 import { useActivities } from '@/state/activities-context';
 import { useMyRegistrations } from '@/state/my-registrations-context';
@@ -85,7 +86,7 @@ export default function RegistrationDetailScreen() {
           icon="camera"
           disabled={!open}
           onPress={() => router.push({ pathname: '/check-in/[registrationId]', params: { registrationId: registration.id } })}
-          accessibilityHint="ตรวจตำแหน่งแล้วถ่ายรูปยืนยันการเข้าร่วม"
+          accessibilityHint="ตรวจตำแหน่งแล้วถ่ายหลักฐานการเข้าร่วม"
         />
       </>
     );
@@ -130,7 +131,7 @@ export default function RegistrationDetailScreen() {
               accessibilityLabel="รูปหลักฐานการเข้าร่วม"
             />
             <Text style={styles.muted}>
-              ถ่ายเมื่อ {formatDate(record.takenAt)} {formatTime(record.takenAt)} · ห่างจุดจัดงาน {formatDistance(record.distanceM)}
+              {record.photoSource && record.photoSource !== 'camera' ? `${PHOTO_SOURCE_LABEL[record.photoSource]} · ` : ''}ถ่ายเมื่อ {formatDate(record.takenAt)} {formatTime(record.takenAt)} · ห่างจุดจัดงาน {formatDistance(record.distanceM)}
             </Text>
             {record.verifiedAt ? (
               <Text style={styles.muted}>ยืนยันเมื่อ {formatTime(record.verifiedAt)}</Text>

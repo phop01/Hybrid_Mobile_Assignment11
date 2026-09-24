@@ -10,7 +10,7 @@ export function makeActivity(overrides: Partial<Activity> = {}): Activity {
     category: 'academic',
     startsAt: '2026-10-01T10:15:00+07:00',
     endsAt: '2026-10-01T12:00:00+07:00',
-    location: { name: 'ห้องประชุมใหญ่', latitude: 16.4745, longitude: 102.8232, radiusM: 150 },
+    location: { name: 'ห้องประชุมใหญ่', latitude: 17.8066, longitude: 102.7463, radiusM: 150 },
     checkInMethod: 'app',
     capacity: 100,
     registeredCount: 40,
@@ -24,7 +24,7 @@ export function makeRegistration(overrides: Partial<Registration> = {}): Registr
     activityId: 'a1',
     status: 'registered',
     registeredAt: '2026-09-30T09:00:00+07:00',
-    form: { fullName: 'สมชาย ใจดี', studentId: '6601234567', faculty: 'วิทยาลัยการคอมพิวเตอร์', phone: '0812345678', dietary: '' },
+    form: { fullName: 'สมชาย ใจดี', studentId: '6601234567', faculty: 'คณะสหวิทยาการ', phone: '0812345678', dietary: '' },
     checkIn: null,
     ...overrides,
   };

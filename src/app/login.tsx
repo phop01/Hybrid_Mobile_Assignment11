@@ -47,6 +47,7 @@ export default function LoginScreen() {
       <Screen>
         <Card>
           <SectionTitle>เข้าสู่ระบบ เช็กอินกิจกรรม</SectionTitle>
+          <Text style={styles.muted}>มหาวิทยาลัยขอนแก่น วิทยาเขตหนองคาย</Text>
           <Text style={styles.muted}>ใช้รหัสนักศึกษาเพื่อลงทะเบียน เช็กอิน และนับจำนวนกิจกรรมที่เข้าร่วม</Text>
           <TextField
             label="รหัสนักศึกษา"

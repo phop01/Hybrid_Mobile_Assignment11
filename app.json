@@ -48,6 +48,14 @@
           "locationWhenInUsePermission": "เช็กอินกิจกรรม ใช้ตำแหน่งเฉพาะตอนเช็กอิน เพื่อยืนยันว่าคุณอยู่ในพื้นที่จัดกิจกรรม"
         }
       ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "เช็กอินกิจกรรม เปิดคลังรูปเฉพาะตอนคุณกดเลือกรูปยืนยันการเข้าร่วมกิจกรรม",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
       "expo-notifications",
       "expo-secure-store",
       "expo-sqlite"

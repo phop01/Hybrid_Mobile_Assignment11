@@ -5,8 +5,9 @@
 const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
 
-// พิกัดอ้างอิงภายในมหาวิทยาลัย
-const CAMPUS = { latitude: 16.4745, longitude: 102.8232 };
+// พิกัดอ้างอิง: มหาวิทยาลัยขอนแก่น วิทยาเขตหนองคาย (ถ.มิตรภาพ ต.หนองกอมเกาะ อ.เมืองหนองคาย)
+// ชื่อสถานที่ในงานด้านล่างเป็นชื่อสมมติ พิกัดคำนวณจากจุดอ้างอิงนี้
+const CAMPUS = { latitude: 17.8066, longitude: 102.7463 };
 
 function at(offsetMs, roundTo30 = true) {
   const date = new Date(Date.now() + offsetMs);
@@ -51,14 +52,14 @@ export function buildActivities() {
     },
     {
       id: 'demo-paper-checkin',
-      title: 'ค่ายอาสาพัฒนาชุมชนรอบมหาวิทยาลัย',
+      title: 'ค่ายอาสาพัฒนาชุมชนรอบวิทยาเขต',
       description:
         'ผู้จัดใช้ใบเซ็นชื่อแบบกระดาษ หลังเซ็นชื่อแล้วให้ถ่ายรูปใบเซ็นชื่อตรงบรรทัดของคุณเป็นหลักฐาน ' +
         'ผู้จัดจะตรวจเทียบกับกระดาษก่อนนับว่าเข้าร่วม',
       category: 'volunteer',
       startsAt: at(-10 * MINUTE, false),
       endsAt: at(2 * HOUR, false),
-      location: place('ศาลาชุมชนบ้านโนนม่วง', -0.009, 0.011, 200),
+      location: place('ศาลาชุมชน ต.หนองกอมเกาะ', -0.009, 0.011, 200),
       checkInMethod: 'paper',
       capacity: 40,
       baseRegistered: 22,
@@ -70,15 +71,15 @@ export function buildActivities() {
       category: 'academic',
       startsAt: at(2 * HOUR),
       endsAt: at(4 * HOUR),
-      location: place('ห้องประชุมอาคารวิทยาการคอมพิวเตอร์', 0.001, -0.002, 120),
+      location: place('ห้องประชุม คณะสหวิทยาการ', 0.001, -0.002, 120),
       checkInMethod: 'app',
       capacity: 120,
       baseRegistered: 87,
     },
     {
       id: 'futsal-friendly',
-      title: 'ฟุตซอลกระชับมิตรระหว่างคณะ',
-      description: 'แข่งขันฟุตซอลแบบทีมละ 5 คน เน้นสนุกและสร้างความสัมพันธ์ระหว่างคณะ มีน้ำดื่มและผ้าเย็นให้',
+      title: 'ฟุตซอลกระชับมิตรระหว่างสาขาวิชา',
+      description: 'แข่งขันฟุตซอลแบบทีมละ 5 คน เน้นสนุกและสร้างความสัมพันธ์ระหว่างสาขาวิชา มีน้ำดื่มและผ้าเย็นให้',
       category: 'sport',
       startsAt: dayAt(1, 16),
       endsAt: dayAt(1, 19),
@@ -102,7 +103,7 @@ export function buildActivities() {
     {
       id: 'thai-music-contest',
       title: 'ประกวดวงดนตรีไทยร่วมสมัย',
-      description: 'ชมการประกวดวงดนตรีไทยจากทุกคณะ ผู้ชมร่วมโหวตวงยอดนิยมได้ มีการแสดงพิเศษช่วงพักกรรมการ',
+      description: 'ชมการประกวดวงดนตรีไทยจากทุกสาขาวิชา ผู้ชมร่วมโหวตวงยอดนิยมได้ มีการแสดงพิเศษช่วงพักกรรมการ',
       category: 'culture',
       startsAt: dayAt(5, 17, 30),
       endsAt: dayAt(5, 21),
@@ -114,7 +115,7 @@ export function buildActivities() {
     {
       id: 'tree-planting',
       title: 'ปลูกป่าเฉลิมพระเกียรติ',
-      description: 'ร่วมปลูกต้นไม้บริเวณพื้นที่ป่าของมหาวิทยาลัย แต่งกายชุดพร้อมลุย มีรถรับส่งจากหน้าหอพัก',
+      description: 'ร่วมปลูกต้นไม้บริเวณพื้นที่ป่าของวิทยาเขต แต่งกายชุดพร้อมลุย มีรถรับส่งจากหน้าหอพัก',
       category: 'volunteer',
       startsAt: dayAt(7, 7),
       endsAt: dayAt(7, 11),
@@ -146,13 +147,13 @@ export const DEMO_USERS = [
     studentId: '6601234567',
     password: 'campus1234',
     fullName: 'สมชาย ใจดี',
-    faculty: 'วิทยาลัยการคอมพิวเตอร์',
+    faculty: 'คณะสหวิทยาการ มข. วิทยาเขตหนองคาย',
   },
   {
     id: 'u2',
     studentId: '6609876543',
     password: 'campus1234',
     fullName: 'สมหญิง รักเรียน',
-    faculty: 'คณะวิศวกรรมศาสตร์',
+    faculty: 'คณะสหวิทยาการ มข. วิทยาเขตหนองคาย',
   },
 ];

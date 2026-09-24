@@ -39,6 +39,7 @@ function isCheckIn(v: unknown): v is CheckInRecord {
   return (
     isObj(v) &&
     isStr(v.photoUrl) &&
+    (v.photoSource === undefined || ['camera', 'library', 'demo'].includes(v.photoSource as string)) &&
     isNum(v.latitude) &&
     isNum(v.longitude) &&
     isNum(v.distanceM) &&

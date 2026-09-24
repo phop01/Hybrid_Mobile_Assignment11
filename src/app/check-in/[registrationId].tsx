@@ -1,6 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { CameraView, useCameraPermissions, type CameraType } from 'expo-camera';
 import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -10,9 +11,10 @@ import { Banner, Button, Card, Screen, SectionTitle, StateView } from '@/compone
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { firstParam, useActivity } from '@/hooks/use-activity';
 import { useNow } from '@/hooks/use-now';
-import { canCheckIn } from '@/lib/check-in-rules';
-import { formatDistance } from '@/lib/format';
+import { canCheckIn, photoTimeProblem } from '@/lib/check-in-rules';
+import { formatDistance, formatTime } from '@/lib/format';
 import { distanceMeters, type Coordinates } from '@/lib/geo';
+import { parseExifTakenAt, PHOTO_SOURCE_LABEL } from '@/lib/photo-time';
 import { ApiError } from '@/services/api-client';
 import { relocateActivityForDemo } from '@/services/campus-api';
 import { getCurrentCoordinates } from '@/services/location';
@@ -20,6 +22,7 @@ import { preparePhotoForUpload } from '@/services/photo';
 import { useActivities } from '@/state/activities-context';
 import { useMyRegistrations, type CheckInOutcome } from '@/state/my-registrations-context';
 import { useAuthenticatedSession } from '@/state/session-context';
+import type { PhotoSource } from '@/types/models';
 
 type LocationState =
   | { status: 'locating' }
@@ -27,12 +30,19 @@ type LocationState =
   | { status: 'denied'; canAskAgain: boolean }
   | { status: 'error'; message: string };
 
-type Photo = { uri: string; base64: string; takenAt: string };
+type Photo = { uri: string; base64: string; takenAt: string; source: PhotoSource };
+
+// เว็บอ่าน EXIF ของรูปไม่ได้ จึงตรวจเวลาถ่ายไม่ได้ → บนเว็บให้ถ่ายสดอย่างเดียว
+// ยกเว้นตอนพัฒนา/สาธิต: เปิดให้เลือกรูปทดสอบได้ทุกแพลตฟอร์ม
+const CAN_PICK_FROM_LIBRARY = Platform.OS !== 'web' || __DEV__;
 
 /**
- * เช็กอิน = ตรวจตำแหน่ง + ถ่ายรูปสด
+ * เช็กอิน = ตรวจตำแหน่ง + รูปยืนยัน
  * - ต้องอยู่ในรัศมีงาน: กันเช็กอินจากหอพัก
- * - ถ่ายสดเท่านั้น ไม่มีปุ่มเลือกจากคลังภาพ: กันเอารูปเก่า/รูปที่เพื่อนส่งมาใช้
+ * - ถ่ายสด หรือเลือกจากคลังได้ (เผื่อถ่ายไว้แล้วตอนอยู่ในงาน หรือกล้องในแอปใช้ไม่ได้)
+ *   แต่รูปจากคลังต้องมีเวลาถ่าย (EXIF) อยู่ในช่วงงาน กันเอารูปเก่า/รูปที่เพื่อนส่งมาใช้
+ *   และบันทึกว่ารูปมาจากคลัง ให้ผู้จัดเห็น
+ * - โหมดสาธิต (__DEV__): รูปที่ไม่ผ่านการตรวจเวลา ส่งเป็น "รูปทดสอบ" ได้ ไว้สาธิตโดยไม่ต้องไปอยู่ในงานจริง
  * - แบบกระดาษ: ถ่ายรูปใบเซ็นชื่อตรงบรรทัดของเรา เป็นหลักฐานที่นักศึกษาเก็บไว้เองได้
  */
 export default function CheckInScreen() {
@@ -51,6 +61,8 @@ export default function CheckInScreen() {
   const [error, setError] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<CheckInOutcome | null>(null);
   const [relocating, setRelocating] = useState(false);
+  // รูปจากคลังที่ไม่ผ่านการตรวจเวลา เก็บไว้ให้กดใช้เป็นรูปทดสอบได้ (โหมดสาธิตเท่านั้น)
+  const [rejectedPick, setRejectedPick] = useState<string | null>(null);
   const now = useNow();
 
   const locate = async () => {
@@ -143,6 +155,7 @@ export default function CheckInScreen() {
         latitude: coords.latitude,
         longitude: coords.longitude,
         takenAt: photo.takenAt,
+        photoSource: photo.source,
         createdAt: new Date().toISOString(),
       });
       setOutcome(result);
@@ -154,20 +167,42 @@ export default function CheckInScreen() {
     }
   };
 
-  const onCaptured = async (uri: string) => {
-    // บันทึกเวลาตอนถ่าย ไม่ใช่ตอนส่ง: ถ้าออฟไลน์แล้วส่งทีหลัง server ยังตรวจได้ว่าถ่ายในช่วงงาน
-    const takenAt = new Date().toISOString();
-    setCameraOpen(false);
+  const applyPhoto = async (uri: string, takenAt: string, source: PhotoSource) => {
     setProcessing(true);
     setError(null);
+    setRejectedPick(null);
     try {
       const prepared = await preparePhotoForUpload(uri);
-      setPhoto({ ...prepared, takenAt });
+      setPhoto({ ...prepared, takenAt, source });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'ประมวลผลรูปไม่สำเร็จ');
     } finally {
       setProcessing(false);
     }
+  };
+
+  const onCaptured = (uri: string) => {
+    // บันทึกเวลาตอนถ่าย ไม่ใช่ตอนส่ง: ถ้าออฟไลน์แล้วส่งทีหลัง server ยังตรวจได้ว่าถ่ายในช่วงงาน
+    setCameraOpen(false);
+    applyPhoto(uri, new Date().toISOString(), 'camera');
+  };
+
+  const pickFromLibrary = async () => {
+    setError(null);
+    setRejectedPick(null);
+    // ไม่ต้องขอสิทธิ์คลังภาพ: ตัวเลือกรูปของระบบให้ผู้ใช้เลือกเองทีละรูป แอปเห็นแค่รูปที่เลือก
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], exif: true, quality: 1 });
+    if (result.canceled || !result.assets[0]) return;
+    const asset = result.assets[0];
+    // ใช้เวลาถ่ายจริงในรูป ไม่ใช่เวลาที่กดเลือก ไม่งั้นรูปเก่าจะผ่านการตรวจเวลา
+    const takenAt = parseExifTakenAt(asset.exif);
+    const problem = photoTimeProblem(activity, takenAt);
+    if (problem || !takenAt) {
+      setError(problem);
+      if (__DEV__) setRejectedPick(asset.uri);
+      return;
+    }
+    applyPhoto(asset.uri, takenAt, 'library');
   };
 
   if (cameraOpen) {
@@ -246,26 +281,53 @@ export default function CheckInScreen() {
 
       {/* ขั้นที่ 2: ถ่ายรูป */}
       <Card style={!decision.ok && styles.disabledCard}>
-        <StepTitle n={2} title={isPaper ? 'ถ่ายรูปใบเซ็นชื่อ' : 'ถ่ายรูปยืนยัน'} done={!!photo} />
+        <StepTitle n={2} title="ถ่ายหลักฐานการเข้าร่วม" done={!!photo} />
         {processing ? <StateView kind="loading" message="กำลังเตรียมรูป…" /> : null}
         {photo ? (
           <>
             <Image source={{ uri: photo.uri }} style={styles.preview} contentFit="cover" accessibilityLabel="รูปที่จะส่ง" />
+            <Text style={styles.muted}>
+              {PHOTO_SOURCE_LABEL[photo.source]} · ถ่ายเมื่อ {formatTime(photo.takenAt)}
+            </Text>
             <Button title="ถ่ายใหม่" icon="camera-reverse-outline" variant="secondary" disabled={submitting} onPress={() => setCameraOpen(true)} />
+            {CAN_PICK_FROM_LIBRARY ? (
+              <Button title="เลือกรูปอื่นจากคลัง" icon="images-outline" variant="ghost" disabled={submitting} onPress={pickFromLibrary} />
+            ) : null}
           </>
         ) : (
-          <Button
-            title="เปิดกล้อง"
-            icon="camera"
-            disabled={!decision.ok || processing}
-            onPress={() => setCameraOpen(true)}
-            accessibilityHint="ต้องถ่ายสด เลือกรูปจากคลังภาพไม่ได้"
-          />
+          <>
+            <Button title="เปิดกล้อง" icon="camera" disabled={!decision.ok || processing} onPress={() => setCameraOpen(true)} />
+            {CAN_PICK_FROM_LIBRARY ? (
+              <Button
+                title="เลือกจากคลังรูป"
+                icon="images-outline"
+                variant="secondary"
+                disabled={!decision.ok || processing}
+                onPress={pickFromLibrary}
+                accessibilityHint="ใช้ได้เฉพาะรูปที่ถ่ายระหว่างงานนี้"
+              />
+            ) : null}
+          </>
         )}
-        <Text style={styles.muted}>ต้องถ่ายสดเท่านั้น เลือกรูปจากคลังภาพไม่ได้ เพื่อกันการใช้รูปเก่า</Text>
+        <Text style={styles.muted}>
+          {Platform.OS !== 'web'
+            ? 'เลือกจากคลังได้ แต่ต้องเป็นรูปที่ถ่ายระหว่างงานนี้ (แอปตรวจจากเวลาในรูป) และผู้จัดจะเห็นว่ารูปมาจากคลัง'
+            : __DEV__
+              ? 'บนเว็บอ่านเวลาถ่ายของรูปไม่ได้ รูปจากคลังจึงส่งได้เฉพาะเป็นรูปทดสอบ (โหมดสาธิต)'
+              : 'บนเว็บต้องถ่ายสดเท่านั้น เพราะเบราว์เซอร์อ่านเวลาถ่ายของรูปในคลังไม่ได้'}
+        </Text>
       </Card>
 
       {error ? <Banner tone="danger">{error}</Banner> : null}
+      {__DEV__ && rejectedPick ? (
+        <Button
+          title="โหมดสาธิต: ใช้รูปนี้เป็นรูปทดสอบ"
+          icon="flask-outline"
+          variant="ghost"
+          onPress={() => applyPhoto(rejectedPick, new Date().toISOString(), 'demo')}
+          accessibilityHint="ข้ามการตรวจเวลาถ่าย รูปจะถูกบันทึกว่าเป็นรูปทดสอบ"
+        />
+      ) : null}
       <Button
         title={submitting ? 'กำลังส่ง…' : isPaper ? 'ส่งหลักฐาน' : 'ยืนยันเช็กอิน'}
         icon="send"
@@ -315,8 +377,8 @@ function CheckInCamera({
         <StateView
           kind="empty"
           icon="camera-outline"
-          title="ต้องใช้กล้องเพื่อถ่ายรูปยืนยัน"
-          message="รูปใช้เป็นหลักฐานว่าคุณเข้าร่วมกิจกรรมจริง แอปไม่เข้าถึงคลังภาพของคุณ"
+          title="ต้องใช้กล้องเพื่อถ่ายหลักฐานการเข้าร่วม"
+          message="รูปใช้เป็นหลักฐานว่าคุณเข้าร่วมกิจกรรมจริง แอปไม่อ่านคลังภาพเอง เห็นเฉพาะรูปที่คุณเลือกเท่านั้น"
         />
         {permission.canAskAgain ? (
           <Button title="อนุญาตให้ใช้กล้อง" icon="camera" onPress={requestPermission} />
