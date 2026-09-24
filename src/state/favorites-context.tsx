@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useReducer, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useReducer, type ReactNode } from 'react';
 
 import { loadFavoriteIds, saveFavoriteIds } from '@/storage/favorites-storage';
 
@@ -24,10 +24,13 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     if (state.hydrated) saveFavoriteIds(state.ids).catch(() => undefined);
   }, [state]);
 
+  // ฟังก์ชันเดิมทุก render: การ์ดที่ห่อ memo จะไม่ render ซ้ำเพราะ prop นี้เปลี่ยน
+  const toggleFavorite = useCallback((id: string) => dispatch({ type: 'toggle', id }), []);
+
   const value: FavoritesContextValue = {
     favoriteIds: state.ids,
     isFavorite: (id) => state.ids.includes(id),
-    toggleFavorite: (id) => dispatch({ type: 'toggle', id }),
+    toggleFavorite,
   };
   return <FavoritesContext.Provider value={value}>{children}</FavoritesContext.Provider>;
 }

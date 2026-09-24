@@ -1,27 +1,23 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { CameraView, useCameraPermissions, type CameraType } from 'expo-camera';
 import { Image } from 'expo-image';
-import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
-import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Linking, Platform, StyleSheet, Text, View } from 'react-native';
 
 import { ActivityMap } from '@/components/activity-map';
+import { CheckInCamera } from '@/components/check-in-camera';
 import { Banner, Button, Card, Screen, SectionTitle, StateView } from '@/components/ui';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { firstParam, useActivity } from '@/hooks/use-activity';
+import { useDemoRelocate } from '@/hooks/use-demo-relocate';
 import { useNow } from '@/hooks/use-now';
 import { canCheckIn, photoTimeProblem } from '@/lib/check-in-rules';
 import { formatDistance, formatTime } from '@/lib/format';
 import { distanceMeters, type Coordinates } from '@/lib/geo';
-import { parseExifTakenAt, PHOTO_SOURCE_LABEL } from '@/lib/photo-time';
-import { ApiError } from '@/services/api-client';
-import { relocateActivityForDemo } from '@/services/campus-api';
+import { PHOTO_SOURCE_LABEL } from '@/lib/photo-time';
 import { getCurrentCoordinates } from '@/services/location';
-import { preparePhotoForUpload } from '@/services/photo';
-import { useActivities } from '@/state/activities-context';
+import { pickPhotoFromLibrary, preparePhotoForUpload } from '@/services/photo';
 import { useMyRegistrations, type CheckInOutcome } from '@/state/my-registrations-context';
-import { useAuthenticatedSession } from '@/state/session-context';
 import type { PhotoSource } from '@/types/models';
 
 type LocationState =
@@ -47,9 +43,7 @@ const CAN_PICK_FROM_LIBRARY = Platform.OS !== 'web' || __DEV__;
  */
 export default function CheckInScreen() {
   const registrationId = firstParam(useLocalSearchParams<{ registrationId?: string | string[] }>().registrationId);
-  const session = useAuthenticatedSession();
   const { findById, checkIn, queuedIds, loading: regsLoading } = useMyRegistrations();
-  const { upsert } = useActivities();
   const registration = registrationId ? findById(registrationId) : undefined;
   const activityState = useActivity(registration?.activityId);
 
@@ -60,7 +54,7 @@ export default function CheckInScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<CheckInOutcome | null>(null);
-  const [relocating, setRelocating] = useState(false);
+  const { relocate, relocating } = useDemoRelocate();
   // รูปจากคลังที่ไม่ผ่านการตรวจเวลา เก็บไว้ให้กดใช้เป็นรูปทดสอบได้ (โหมดสาธิตเท่านั้น)
   const [rejectedPick, setRejectedPick] = useState<string | null>(null);
   const now = useNow();
@@ -132,15 +126,12 @@ export default function CheckInScreen() {
     : canCheckIn({ activity, registration, distanceM: distance, now });
 
   const relocateForDemo = async () => {
-    if (!session || !coords) return;
-    setRelocating(true);
+    if (!coords) return;
     setError(null);
     try {
-      upsert(await relocateActivityForDemo(session.token, activity.id, coords));
+      await relocate(activity.id, coords);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'ย้ายสถานที่ไม่สำเร็จ');
-    } finally {
-      setRelocating(false);
     }
   };
 
@@ -161,7 +152,7 @@ export default function CheckInScreen() {
       setOutcome(result);
     } catch (e) {
       // server ปฏิเสธ (เช่น ตรวจแล้วอยู่นอกพื้นที่) → บอกเหตุผล รูปยังอยู่ ลองส่งใหม่ได้
-      setError(e instanceof ApiError || e instanceof Error ? e.message : 'ส่งไม่สำเร็จ');
+      setError(e instanceof Error ? e.message : 'ส่งไม่สำเร็จ');
     } finally {
       setSubmitting(false);
     }
@@ -190,19 +181,16 @@ export default function CheckInScreen() {
   const pickFromLibrary = async () => {
     setError(null);
     setRejectedPick(null);
-    // ไม่ต้องขอสิทธิ์คลังภาพ: ตัวเลือกรูปของระบบให้ผู้ใช้เลือกเองทีละรูป แอปเห็นแค่รูปที่เลือก
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], exif: true, quality: 1 });
-    if (result.canceled || !result.assets[0]) return;
-    const asset = result.assets[0];
-    // ใช้เวลาถ่ายจริงในรูป ไม่ใช่เวลาที่กดเลือก ไม่งั้นรูปเก่าจะผ่านการตรวจเวลา
-    const takenAt = parseExifTakenAt(asset.exif);
+    const picked = await pickPhotoFromLibrary();
+    if (!picked) return;
+    const { uri, takenAt } = picked;
     const problem = photoTimeProblem(activity, takenAt);
     if (problem || !takenAt) {
       setError(problem);
-      if (__DEV__) setRejectedPick(asset.uri);
+      if (__DEV__) setRejectedPick(uri);
       return;
     }
-    applyPhoto(asset.uri, takenAt, 'library');
+    applyPhoto(uri, takenAt, 'library');
   };
 
   if (cameraOpen) {
@@ -251,14 +239,16 @@ export default function CheckInScreen() {
           </>
         ) : null}
         {distance !== null ? (
-          <View style={styles.distanceRow} accessible accessibilityLabel={`ห่างจุดจัดงาน ${formatDistance(distance)}`}>
+          // ผ่าน/ไม่ผ่านบอกด้วยข้อความด้วย ไม่ใช่แค่สีและรูปไอคอน (screen reader อ่านได้ คนตาบอดสีแยกได้)
+          <View style={styles.distanceRow} accessible>
             <Ionicons
               name={distance <= activity.location.radiusM ? 'checkmark-circle' : 'close-circle'}
               size={28}
               color={distance <= activity.location.radiusM ? Colors.success : Colors.danger}
             />
             <Text style={styles.distanceText}>
-              ห่างจุดจัดงาน {formatDistance(distance)} (ต้องไม่เกิน {activity.location.radiusM} ม.)
+              {distance <= activity.location.radiusM ? 'อยู่ในพื้นที่' : 'อยู่นอกพื้นที่'} · ห่างจุดจัดงาน {formatDistance(distance)} (ต้องไม่เกิน{' '}
+              {activity.location.radiusM} ม.)
             </Text>
           </View>
         ) : null}
@@ -280,7 +270,7 @@ export default function CheckInScreen() {
       </Card>
 
       {/* ขั้นที่ 2: ถ่ายรูป */}
-      <Card style={!decision.ok && styles.disabledCard}>
+      <Card>
         <StepTitle n={2} title="ถ่ายหลักฐานการเข้าร่วม" done={!!photo} />
         {processing ? <StateView kind="loading" message="กำลังเตรียมรูป…" /> : null}
         {photo ? (
@@ -341,7 +331,8 @@ export default function CheckInScreen() {
 
 function StepTitle({ n, title, done }: { n: number; title: string; done: boolean }) {
   return (
-    <View style={styles.step}>
+    // อ่านเป็นประโยคเดียว "ขั้นที่ 1 ตรวจตำแหน่ง เสร็จแล้ว" แทนที่จะรู้ว่าเสร็จจากสีเขียวอย่างเดียว
+    <View style={styles.step} accessible accessibilityRole="header" accessibilityLabel={`ขั้นที่ ${n} ${title}${done ? ' เสร็จแล้ว' : ''}`}>
       <View style={[styles.stepNum, done && { backgroundColor: Colors.success }]}>
         {done ? <Ionicons name="checkmark" size={16} color="#fff" /> : <Text style={styles.stepNumText}>{n}</Text>}
       </View>
@@ -350,115 +341,15 @@ function StepTitle({ n, title, done }: { n: number; title: string; done: boolean
   );
 }
 
-function CheckInCamera({
-  initialFacing,
-  hint,
-  onCapture,
-  onClose,
-}: {
-  initialFacing: CameraType;
-  hint: string;
-  onCapture: (uri: string) => void;
-  onClose: () => void;
-}) {
-  const [permission, requestPermission] = useCameraPermissions();
-  const [facing, setFacing] = useState<CameraType>(initialFacing);
-  const [ready, setReady] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const cameraRef = useRef<CameraView>(null);
-
-  if (!permission) return <StateView kind="loading" message="กำลังเตรียมกล้อง…" />;
-
-  if (!permission.granted) {
-    // ขอสิทธิ์ตอนผู้ใช้กดเปิดกล้อง อธิบายก่อนว่าเอาไปทำอะไร
-    return (
-      <Screen>
-        <StateView
-          kind="empty"
-          icon="camera-outline"
-          title="ต้องใช้กล้องเพื่อถ่ายหลักฐานการเข้าร่วม"
-          message="รูปใช้เป็นหลักฐานว่าคุณเข้าร่วมกิจกรรมจริง แอปไม่อ่านคลังภาพเอง เห็นเฉพาะรูปที่คุณเลือกเท่านั้น"
-        />
-        {permission.canAskAgain ? (
-          <Button title="อนุญาตให้ใช้กล้อง" icon="camera" onPress={requestPermission} />
-        ) : (
-          <>
-            <Banner tone="danger">ปิดสิทธิ์กล้องไว้ ต้องเปิดในการตั้งค่าของเครื่องก่อนจึงจะเช็กอินได้</Banner>
-            <Button title="เปิดการตั้งค่า" icon="settings-outline" onPress={() => Linking.openSettings()} />
-          </>
-        )}
-        <Button title="ยกเลิก" variant="ghost" onPress={onClose} />
-      </Screen>
-    );
-  }
-
-  const shoot = async () => {
-    if (!ready || busy || !cameraRef.current) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const picture = await cameraRef.current.takePictureAsync({ quality: 0.7 });
-      if (!picture?.uri) throw new Error('ถ่ายรูปไม่สำเร็จ');
-      onCapture(picture.uri);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'ถ่ายรูปไม่สำเร็จ ลองใหม่');
-      setBusy(false);
-    }
-  };
-
-  return (
-    <View style={styles.cameraWrap}>
-      <CameraView
-        ref={cameraRef}
-        style={StyleSheet.absoluteFill}
-        facing={facing}
-        onCameraReady={() => setReady(true)}
-        onMountError={() => setError('เปิดกล้องไม่ได้ ลองปิดแอปอื่นที่ใช้กล้องแล้วลองใหม่')}
-      />
-      <View style={styles.cameraHint}>
-        <Text style={styles.cameraHintText}>{hint}</Text>
-      </View>
-      {error ? (
-        <View style={styles.cameraError}>
-          <Banner tone="danger">{error}</Banner>
-        </View>
-      ) : null}
-      <View style={styles.cameraBar}>
-        <Pressable style={styles.roundBtn} onPress={onClose} accessibilityRole="button" accessibilityLabel="ปิดกล้อง">
-          <Ionicons name="close" size={28} color="#fff" />
-        </Pressable>
-        <Pressable
-          style={[styles.shutter, (!ready || busy) && { opacity: 0.5 }]}
-          onPress={shoot}
-          disabled={!ready || busy}
-          accessibilityRole="button"
-          accessibilityLabel="ถ่ายรูป">
-          <View style={styles.shutterInner} />
-        </Pressable>
-        <Pressable
-          style={styles.roundBtn}
-          onPress={() => {
-            setReady(false);
-            setFacing((f) => (f === 'back' ? 'front' : 'back'));
-          }}
-          accessibilityRole="button"
-          accessibilityLabel="สลับกล้องหน้าหลัง">
-          <Ionicons name="camera-reverse" size={28} color="#fff" />
-        </Pressable>
-      </View>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   muted: { fontSize: 13, color: Colors.textMuted, lineHeight: 19 },
-  disabledCard: { opacity: 0.6 },
   step: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  // minWidth/minHeight แทนขนาดตายตัว: ตัวอักษรขยาย 200% แล้ววงกลมโตตาม ตัวเลขไม่ล้น
   stepNum: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    minWidth: 28,
+    minHeight: 28,
+    paddingHorizontal: 6,
+    borderRadius: Radius.pill,
     backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
@@ -467,43 +358,4 @@ const styles = StyleSheet.create({
   distanceRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   distanceText: { flex: 1, fontSize: 15, color: Colors.text, fontWeight: '600' },
   preview: { width: '100%', aspectRatio: 3 / 4, maxHeight: 420, borderRadius: Radius.md, backgroundColor: Colors.border },
-  cameraWrap: { flex: 1, backgroundColor: '#000' },
-  cameraHint: {
-    position: 'absolute',
-    top: Spacing.lg,
-    left: Spacing.lg,
-    right: Spacing.lg,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    borderRadius: Radius.md,
-    padding: Spacing.md,
-  },
-  cameraHintText: { color: '#fff', fontSize: 15, textAlign: 'center' },
-  cameraError: { position: 'absolute', top: 100, left: Spacing.lg, right: Spacing.lg },
-  cameraBar: {
-    position: 'absolute',
-    bottom: Spacing.xxl,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-  },
-  roundBtn: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  shutter: {
-    width: 78,
-    height: 78,
-    borderRadius: 39,
-    borderWidth: 4,
-    borderColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  shutterInner: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#fff' },
 });

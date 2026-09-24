@@ -49,8 +49,9 @@ export default function ProfileScreen() {
   return (
     <Screen>
       <Card style={styles.identity}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{user.fullName.slice(0, 1)}</Text>
+        {/* ตัวอักษรในวงกลมเป็นของตกแต่ง: ซ่อนจาก screen reader และจำกัดการขยายไม่ให้ล้นวงกลม */}
+        <View style={styles.avatar} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          <Text style={styles.avatarText} maxFontSizeMultiplier={1.3}>{user.fullName.slice(0, 1)}</Text>
         </View>
         <View style={{ flex: 1, gap: 2 }}>
           <Text style={styles.name}>{user.fullName}</Text>
@@ -144,7 +145,7 @@ const styles = StyleSheet.create({
   barLabel: { width: 100, fontSize: 14, color: Colors.text },
   barTrack: { flex: 1, height: 10, backgroundColor: Colors.background, borderRadius: Radius.pill, overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: Radius.pill },
-  barCount: { width: 24, textAlign: 'right', fontWeight: '700', color: Colors.text },
+  barCount: { minWidth: 24, textAlign: 'right', fontWeight: '700', color: Colors.text },
   gallery: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md },
   photoCell: { width: 140, gap: 4 },
   photo: { width: 140, height: 140, borderRadius: Radius.md, backgroundColor: Colors.border },

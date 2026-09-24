@@ -14,6 +14,9 @@ import { useFavorites } from '@/state/favorites-context';
  * ลงทะเบียนแล้วจะกินที่นั่ง ถ้ายังไม่แน่ใจให้บันทึกไว้ก่อน ที่นั่งจะไม่ถูกจองทิ้ง
  * ไม่ต้อง login และเก็บในเครื่อง
  */
+// ประกาศนอก component: เป็นฟังก์ชันเดิมทุก render การ์ด (memo) จึงไม่ render ซ้ำ
+const openActivity = (id: string) => router.push({ pathname: '/activities/[id]', params: { id } });
+
 export default function SavedScreen() {
   const { activities, status } = useActivities();
   const { favoriteIds, isFavorite, toggleFavorite } = useFavorites();
@@ -38,7 +41,7 @@ export default function SavedScreen() {
             activity={item}
             isFavorite={isFavorite(item.id)}
             status={statusOf(item.id)}
-            onOpen={(id) => router.push({ pathname: '/activities/[id]', params: { id } })}
+            onOpen={openActivity}
             onToggleFavorite={toggleFavorite}
           />
         </View>

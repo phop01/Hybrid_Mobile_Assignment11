@@ -39,6 +39,8 @@ export default function TabsLayout() {
         options={{
           title: 'ของฉัน',
           tabBarBadge: pending > 0 ? pending : undefined,
+          // ตัวเลขบน badge screen reader ไม่อ่าน จึงบอกในป้ายของแท็บด้วย
+          tabBarAccessibilityLabel: pending > 0 ? `ของฉัน, รอตรวจหลักฐาน ${pending} รายการ` : 'ของฉัน',
           tabBarIcon: ({ color, size }) => <Ionicons name="ticket" size={size} color={color} />,
         }}
       />

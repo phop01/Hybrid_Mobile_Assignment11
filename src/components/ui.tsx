@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
   },
   buttonText: { fontSize: 16, fontWeight: '600', textAlign: 'center', flexShrink: 1 },
   chip: {
-    minHeight: 36,
+    minHeight: MinTouch, // เดิม 36 ต่ำกว่าพื้นที่แตะขั้นต่ำ 44
     paddingHorizontal: Spacing.md,
     borderRadius: Radius.pill,
     borderWidth: 1,

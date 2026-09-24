@@ -31,6 +31,7 @@ Assignment 11 รายวิชา Hybrid Mobile Application Programming
 | 9 | Camera + Image Picker | ถ่ายหลักฐานการเข้าร่วม หรือเลือกจากคลังรูป |
 | 10 | Location + Maps | ตรวจว่าอยู่ในพื้นที่งาน, แท็บแผนที่รวมกิจกรรม |
 | 11 | Notifications | แจ้งเตือนเมื่อเปิดเช็กอิน |
+| 12 | Architecture, Performance, Accessibility | แยก service/hook ออกจากหน้าจอ, วัดและลดการ render ซ้ำ, ตรวจและแก้ accessibility 9 ข้อ |
 
 ## ติดตั้งและรัน
 
@@ -50,3 +51,4 @@ npm start
 - [docs/DESIGN.md](docs/DESIGN.md): เหตุผลของแต่ละฟีเจอร์
 - [docs/DIAGRAMS.md](docs/DIAGRAMS.md): แผนภาพการทำงาน
 - [docs/TESTING.md](docs/TESTING.md): ผลการทดสอบ, ขั้นตอนสาธิต, การแก้ปัญหา
+- [docs/QUALITY.md](docs/QUALITY.md): สัปดาห์ 12 โครงสร้าง, ผลวัดประสิทธิภาพ, รายงาน accessibility

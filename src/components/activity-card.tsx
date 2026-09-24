@@ -1,4 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Colors, MinTouch, Radius, Spacing } from '@/constants/theme';
@@ -21,8 +22,11 @@ type ActivityCardProps = {
 /**
  * การ์ดกิจกรรม ใช้ซ้ำในหน้ากิจกรรม บันทึกไว้ และของฉัน
  * รับข้อมูลผ่าน props อย่างเดียว ไม่ดึงข้อมูลเอง จึงไม่ผูกกับว่าข้อมูลมาจาก API หรือ cache
+ *
+ * ห่อด้วย memo (สัปดาห์ 12): วัดแล้วกดดาวใบเดียว การ์ด render ซ้ำทั้งรายการ (10/10)
+ * หลังใส่ memo + ส่ง callback ที่ไม่เปลี่ยนทุก render เหลือ 1/10 (ดู __tests__/performance.test.tsx)
  */
-export function ActivityCard({ activity, isFavorite, onOpen, onToggleFavorite, status }: ActivityCardProps) {
+export const ActivityCard = memo(function ActivityCard({ activity, isFavorite, onOpen, onToggleFavorite, status }: ActivityCardProps) {
   const category = CATEGORIES[activity.category];
   const ended = isEnded(activity);
   const left = seatsLeft(activity);
@@ -93,7 +97,7 @@ export function ActivityCard({ activity, isFavorite, onOpen, onToggleFavorite, s
       </Pressable>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: {
@@ -104,7 +108,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   main: { flex: 1, flexDirection: 'row' },
-  ended: { opacity: 0.65 },
+  // ไม่ใช้ opacity: ทำให้ข้อความสีเทาเหลือ contrast 2.9:1 อ่านยาก ใช้พื้นหลังต่างสีแทน (มีคำว่า "จบแล้ว" บอกอยู่แล้ว)
+  ended: { backgroundColor: Colors.background },
   stripe: { width: 6 },
   body: { flex: 1, padding: Spacing.lg, gap: Spacing.sm },
   topRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flexWrap: 'wrap', paddingRight: MinTouch },

@@ -12,6 +12,9 @@ import { formatUpdatedAt } from '@/lib/format';
 import { useActivities } from '@/state/activities-context';
 import { useFavorites } from '@/state/favorites-context';
 
+// ประกาศนอก component: เป็นฟังก์ชันเดิมทุก render การ์ด (memo) จึงไม่ render ซ้ำ
+const openActivity = (id: string) => router.push({ pathname: '/activities/[id]', params: { id } });
+
 export default function ActivitiesScreen() {
   const { activities, status, error, offlineSince, refresh } = useActivities();
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -94,7 +97,7 @@ export default function ActivitiesScreen() {
             activity={item}
             isFavorite={isFavorite(item.id)}
             status={statusOf(item.id)}
-            onOpen={(id) => router.push({ pathname: '/activities/[id]', params: { id } })}
+            onOpen={openActivity}
             onToggleFavorite={toggleFavorite}
           />
         </View>
